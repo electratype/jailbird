@@ -1,0 +1,113 @@
+basePath: /api/v1
+definitions:
+  main.PlainProject:
+    properties:
+      description:
+        description: |-
+          Description of the project
+          Required: false
+        type: string
+      id:
+        description: |-
+          The id/slug for the project
+          Required: true
+          Min length: 1
+        minLength: 1
+        type: string
+      name:
+        description: |-
+          Name of the project
+          Required: false
+        type: string
+    required:
+    - id
+    type: object
+  main.Project:
+    properties:
+      created_at:
+        type: string
+      description:
+        description: |-
+          Description of the project
+          Required: false
+        type: string
+      id:
+        description: |-
+          The id/slug for the project
+          Required: true
+          Min length: 1
+        minLength: 1
+        type: string
+      name:
+        description: |-
+          Name of the project
+          Required: false
+        type: string
+      updated_at:
+        type: string
+    required:
+    - id
+    type: object
+host: localhost:5454
+info:
+  contact:
+    email: support@electratype.com
+    name: API support and issue management
+    url: https://electratype.com
+  description: This a progress management system API.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: JailBird API
+  version: "1.0"
+paths:
+  /projects:
+    get:
+      consumes:
+      - application/json
+      description: Returns array of all projects
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.Project'
+            type: array
+      summary: Return all projects
+      tags:
+      - project
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Project definition
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/main.PlainProject'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Create new project
+      tags:
+      - project
+  /projects/{id}:
+    delete:
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+      summary: Delete project
+      tags:
+      - project
+swagger: "2.0"

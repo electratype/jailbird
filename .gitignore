@@ -1,0 +1,16 @@
+# VS Code workspace
+.vscode
+
+# Environment variables
+.env*
+
+# Binaries for programs and plugins
+jailbird
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go workspace file
+go.work
