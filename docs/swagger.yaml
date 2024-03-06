@@ -1,6 +1,27 @@
 basePath: /api/v1
 definitions:
-  main.PlainProject:
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+  models.ApiKey:
+    properties:
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      value:
+        type: string
+    type: object
+  models.PlainProject:
     properties:
       description:
         description: |-
@@ -14,6 +35,13 @@ definitions:
           Min length: 1
         minLength: 1
         type: string
+      image:
+        description: |-
+          Image of the project
+          Required: false
+        items:
+          type: integer
+        type: array
       name:
         description: |-
           Name of the project
@@ -22,8 +50,29 @@ definitions:
     required:
     - id
     type: object
-  main.Project:
+  models.ProgressItem:
     properties:
+      completedAt:
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      eid:
+        type: string
+      id:
+        type: integer
+      state:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  models.Project:
+    properties:
+      apiKeys:
+        items:
+          $ref: '#/definitions/models.ApiKey'
+        type: array
       created_at:
         type: string
       description:
@@ -38,15 +87,41 @@ definitions:
           Min length: 1
         minLength: 1
         type: string
+      image:
+        description: |-
+          Image of the project
+          Required: false
+        items:
+          type: integer
+        type: array
       name:
         description: |-
           Name of the project
           Required: false
         type: string
+      progressItems:
+        items:
+          $ref: '#/definitions/models.ProgressItem'
+        type: array
       updated_at:
         type: string
+      users:
+        items:
+          $ref: '#/definitions/models.User'
+        type: array
     required:
     - id
+    type: object
+  models.User:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: integer
+      kratosID:
+        type: string
+      updatedAt:
+        type: string
     type: object
 host: localhost:5454
 info:
@@ -73,7 +148,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/main.Project'
+              $ref: '#/definitions/models.Project'
             type: array
       summary: Return all projects
       tags:
@@ -87,7 +162,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/main.PlainProject'
+          $ref: '#/definitions/models.PlainProject'
       produces:
       - application/json
       responses:

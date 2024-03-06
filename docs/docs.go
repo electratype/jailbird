@@ -42,7 +42,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/main.Project"
+                                "$ref": "#/definitions/models.Project"
                             }
                         }
                     }
@@ -66,7 +66,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.PlainProject"
+                            "$ref": "#/definitions/models.PlainProject"
                         }
                     }
                 ],
@@ -101,7 +101,39 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "main.PlainProject": {
+        "gorm.DeletedAt": {
+            "type": "object",
+            "properties": {
+                "time": {
+                    "type": "string"
+                },
+                "valid": {
+                    "description": "Valid is true if Time is not NULL",
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.ApiKey": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PlainProject": {
             "type": "object",
             "required": [
                 "id"
@@ -116,18 +148,57 @@ const docTemplate = `{
                     "type": "string",
                     "minLength": 1
                 },
+                "image": {
+                    "description": "Image of the project\nRequired: false",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "name": {
                     "description": "Name of the project\nRequired: false",
                     "type": "string"
                 }
             }
         },
-        "main.Project": {
+        "models.ProgressItem": {
+            "type": "object",
+            "properties": {
+                "completedAt": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "eid": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Project": {
             "type": "object",
             "required": [
                 "id"
             ],
             "properties": {
+                "apiKeys": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ApiKey"
+                    }
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -140,11 +211,47 @@ const docTemplate = `{
                     "type": "string",
                     "minLength": 1
                 },
+                "image": {
+                    "description": "Image of the project\nRequired: false",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "name": {
                     "description": "Name of the project\nRequired: false",
                     "type": "string"
                 },
+                "progressItems": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ProgressItem"
+                    }
+                },
                 "updated_at": {
+                    "type": "string"
+                },
+                "users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.User"
+                    }
+                }
+            }
+        },
+        "models.User": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "kratosID": {
+                    "type": "string"
+                },
+                "updatedAt": {
                     "type": "string"
                 }
             }

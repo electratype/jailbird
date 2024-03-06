@@ -5,15 +5,15 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	_ "electratype/jailbird/docs"
+
+	"electratype/jailbird/models"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -21,46 +21,11 @@ import (
 
 var DB *gorm.DB
 
-type ApiKey struct {
-	ID        uint
-	Name      string
-	Value     uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
-	CreatedAt time.Time
-}
-
-// swagger:model
-type PlainProject struct {
-
-	// The id/slug for the project
-	// Required: true
-	// Min length: 1
-	Slug string `gorm:"unique" json:"id" binding:"required" validate:"min=1,regexp=^[a-zA-Z0-9-]*$"`
-
-	// Name of the project
-	// Required: false
-	Name *string `json:"name"`
-
-	// Description of the project
-	// Required: false
-	Description *string `json:"description"`
-}
-
-type Project struct {
-	ID        uint      `gorm:"primaryKey" json:"-"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	PlainProject
-}
-
-type ProgressItem struct {
-	gorm.Model
-	EID         uuid.UUID
-	CompletedAt time.Time
-	State       string
-}
-
 func MigrateDatabase() {
-	DB.AutoMigrate(&Project{})
+
+	//DB.Exec("CREATE OR REPLACE FUNCTION get_film_count(len_from int, len_to int)")
+
+	DB.AutoMigrate(&models.Project{}, &models.ProgressItem{}, &models.ApiKey{}, &models.User{})
 }
 
 // @Summary Return all projects
@@ -69,11 +34,11 @@ func MigrateDatabase() {
 // @Tags project
 // @Accept json
 // @Produce json
-// @Success 200 {array} main.Project
+// @Success 200 {array} models.Project
 // @Router /projects [get]
 func ListProjects(c *gin.Context) {
 
-	var project []Project
+	var project []models.Project
 	DB.Find(&project)
 
 	c.JSON(http.StatusOK, &project)
@@ -85,24 +50,24 @@ func ListProjects(c *gin.Context) {
 // @Success 200
 // @Router /projects/{id} [delete]
 func DeleteProject(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Param("projectId")
 
-	DB.Where("slug = ?", id).Delete(&Project{})
+	DB.Where("slug = ?", id).Delete(&models.Project{})
 
 	c.JSON(204, "")
 }
 
 // @Summary Create new project
 // @Tags project
-// @Param body body PlainProject true "Project definition"
+// @Param body body models.PlainProject true "Project definition"
 // @Accept json
 // @Produce json
 // @Success 200
 // @Router /projects [post]
 func AddProject(c *gin.Context) {
 
-	var plainProject PlainProject
-	var project Project
+	var plainProject models.PlainProject
+	var project models.Project
 
 	if err := c.ShouldBindJSON(&plainProject); err != nil {
 		c.Error(err)
@@ -123,6 +88,10 @@ func AddProject(c *gin.Context) {
 	}
 
 	c.JSON(204, "")
+}
+
+func ListItems(c *gin.Context) {
+
 }
 
 // @title           JailBird API
@@ -156,8 +125,13 @@ func main() {
 			{
 				projects.GET("", ListProjects)
 				projects.POST("", AddProject)
-				projects.DELETE(":id", DeleteProject)
+				projects.DELETE(":projectId", DeleteProject)
+				items := projects.Group(":projectId/items")
+				{
+					items.GET("", ListItems)
+				}
 			}
+
 		}
 	}
 	router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
