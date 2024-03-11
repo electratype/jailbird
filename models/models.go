@@ -21,7 +21,31 @@ type DeletableModel struct {
 	DeletedAt *time.Time `sql:"index" json:"deleted_at,omitempty"`
 }
 
-// swagger:model
+type PlainOrganization struct {
+	Slug string  `gorm:"unique" json:"slug" binding:"required" validate:"min=1,regexp=^[a-zA-Z0-9-]*$"`
+	Name string  `json:"name"`
+	Logo *[]byte `json:"logo,omitempty"`
+}
+
+type Organization struct {
+	UpdatableModel
+	PlainOrganization
+	Users    []User     `gorm:"many2many:organization_users;" json:"-"`
+	Projects *[]Project `json:"-"`
+}
+
+type User struct {
+	UpdatableModel
+	KratosID uuid.UUID
+}
+
+type OrganizationUser struct {
+	OrganizationID int `gorm:"primaryKey"`
+	UserID         int `gorm:"primaryKey"`
+	JoinedAt       time.Time
+	Role           string
+}
+
 type PlainProject struct {
 
 	// The id/slug for the project
@@ -42,22 +66,22 @@ type PlainProject struct {
 	Image *[]byte `json:"image"`
 }
 
-// swagger:model
 type Project struct {
 	DeletableModel
 	PlainProject
-	Users         []User `gorm:"many2many:project_users;"`
-	ApiKeys       []*ApiKey
-	ProgressItems []*ProgressItem
+	Users          []User          `gorm:"many2many:project_users;" json:"-"`
+	ApiKeys        []*ApiKey       `json:"-"`
+	ProgressItems  []*ProgressItem `json:"-"`
+	OrganizationID uint            `json:"-"`
 }
 
-// swagger:model
-type User struct {
-	UpdatableModel
-	KratosID uuid.UUID
+type ProjectUser struct {
+	ProjectID int `gorm:"primaryKey"`
+	UserID    int `gorm:"primaryKey"`
+	JoinedAt  time.Time
+	Role      string
 }
 
-// swagger:model
 type ApiKey struct {
 	GenericModel
 	ProjectID   uint
@@ -66,7 +90,6 @@ type ApiKey struct {
 	Value       uuid.UUID `gorm:"unique,type:uuid;default:gen_random_uuid()"`
 }
 
-// swagger:model
 type ProgressItem struct {
 	DeletableModel
 	ProjectID   uint

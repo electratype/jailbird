@@ -11,12 +11,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	_ "electratype/jailbird/docs"
-
 	"electratype/jailbird/models"
-
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 var DB *gorm.DB
@@ -25,17 +20,42 @@ func MigrateDatabase() {
 
 	//DB.Exec("CREATE OR REPLACE FUNCTION get_film_count(len_from int, len_to int)")
 
-	DB.AutoMigrate(&models.Project{}, &models.ProgressItem{}, &models.ApiKey{}, &models.User{})
+	DB.AutoMigrate(&models.Organization{}, &models.Project{}, &models.User{}, &models.OrganizationUser{}, &models.ProgressItem{}, &models.ApiKey{}, &models.ProjectUser{})
 }
 
-// @Summary Return all projects
-// @Schemes
-// @Description Returns array of all projects
-// @Tags project
-// @Accept json
-// @Produce json
-// @Success 200 {array} models.Project
-// @Router /projects [get]
+func ListOrganizations(c *gin.Context) {
+	var organizations []models.Organization
+	DB.Find(&organizations)
+
+	c.JSON(http.StatusOK, &organizations)
+}
+
+func AddOrganization(c *gin.Context) {
+
+	var plainOrg models.PlainOrganization
+	var org models.Organization
+
+	if err := c.ShouldBindJSON(&plainOrg); err != nil {
+		c.Error(err)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"status": "failure", "error": err.Error()})
+	}
+
+	log.Printf("%+v\n", &plainOrg)
+
+	org.Slug = plainOrg.Slug
+	org.Name = plainOrg.Name
+	org.Logo = plainOrg.Logo
+
+	result := DB.Create(&org)
+
+	if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
+		c.Error(result.Error)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"status": "failure", "error": result.Error.Error()})
+	}
+
+	c.JSON(204, "")
+}
+
 func ListProjects(c *gin.Context) {
 
 	var project []models.Project
@@ -44,11 +64,6 @@ func ListProjects(c *gin.Context) {
 	c.JSON(http.StatusOK, &project)
 }
 
-// @Summary Delete project
-// @Tags project
-// @Param id path string true "Project ID"
-// @Success 200
-// @Router /projects/{id} [delete]
 func DeleteProject(c *gin.Context) {
 	id := c.Param("projectId")
 
@@ -57,13 +72,6 @@ func DeleteProject(c *gin.Context) {
 	c.JSON(204, "")
 }
 
-// @Summary Create new project
-// @Tags project
-// @Param body body models.PlainProject true "Project definition"
-// @Accept json
-// @Produce json
-// @Success 200
-// @Router /projects [post]
 func AddProject(c *gin.Context) {
 
 	var plainProject models.PlainProject
@@ -94,19 +102,6 @@ func ListItems(c *gin.Context) {
 
 }
 
-// @title           JailBird API
-// @version         1.0
-// @description     This a progress management system API.
-
-// @contact.name   API support and issue management
-// @contact.url    https://electratype.com
-// @contact.email  support@electratype.com
-
-// @license.name  Apache 2.0
-// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
-
-// @host      localhost:5454
-// @BasePath  /api/v1
 func main() {
 
 	DSN := os.Getenv("DSN")
@@ -121,20 +116,24 @@ func main() {
 	{
 		v1 := api.Group("/v1")
 		{
-			projects := v1.Group("/projects")
+			organizations := v1.Group("/organizations")
 			{
-				projects.GET("", ListProjects)
-				projects.POST("", AddProject)
-				projects.DELETE(":projectId", DeleteProject)
-				items := projects.Group(":projectId/items")
+				organizations.GET("", ListOrganizations)
+				organizations.POST("", AddOrganization)
+
+				projects := organizations.Group("/projects")
 				{
-					items.GET("", ListItems)
+					projects.GET("", ListProjects)
+					projects.POST("", AddProject)
+					projects.DELETE(":projectId", DeleteProject)
+					items := projects.Group(":projectId/items")
+					{
+						items.GET("", ListItems)
+					}
 				}
 			}
-
 		}
 	}
-	router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	var err error
 	DB, err = gorm.Open(postgres.Open(DSN), &gorm.Config{TranslateError: true})
